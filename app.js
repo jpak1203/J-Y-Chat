@@ -6,7 +6,7 @@ var port = process.env.PORT || 5000;
 
 process.env.PWD = process.cwd();
 
-app.use(express.static(process.env.PWD + '/public'));
+app.use(express.static(process.env.PWD+'/public'));
 
 var users = {};
 var numUsers = 0;
@@ -45,5 +45,5 @@ io.on('connection', function(socket) {
 });
 
 http.listen(port, function() {
-  console.log('listening on port 3000');
+  console.log('listening on port 5000');
 });
