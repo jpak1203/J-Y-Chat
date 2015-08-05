@@ -1,0 +1,78 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font: 13px Helvetica, Arial, sans-serif;
+}
+
+body h1 {
+  text-align: center;
+  font-size: 35px;
+  font-weight: lighter;
+  text-decoration: underline;
+  display:none;
+}
+
+.send-message {
+  padding: 3px;
+  position: fixed;
+  bottom: 0;
+  width: 98%;
+}
+
+.send-message .m {
+  border: 1px solid black;
+}
+
+.send-message input {
+  border: 0;
+  padding: 10px;
+  width: 90%;
+  margin-right: .5%;
+}
+
+.send-message button {
+  width: 9%;
+  background: rgba(255, 96, 82, 0.7);
+  border: none;
+  padding: 10px;
+}
+
+.messages {
+  margin: 11;
+  padding: 5px 10px;
+  font-size: 20px;
+  background-color: #f7f7f7;
+}
+
+.login {
+  text-align: center;
+  margin-top: 250px;
+}
+
+.login p {
+  font-size: 50px;
+}
+
+.login .setNick .usernameInput {
+  border: none;
+  border-bottom: 2px solid black;
+  outline: none;
+  padding-top: 25px;
+  padding-bottom: 15px;
+  font-size: 25px;
+  text-align: center;
+  width: 400px;
+}
+
+.messagePage {
+  display:none;
+}
+
+.system {
+  color: grey;
+  font-size: 15px;
+}

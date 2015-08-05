@@ -1,0 +1,13 @@
+{
+  "name": "socket.io_chat-app",
+  "version": "0.0.0",
+  "description": "simple chat using socket.io",
+  "main": "app.js",
+  "author": "Justin Pak",
+  "private": true,
+  "dependencies": {
+    "express": "latest",
+    "socket.io": "latest",
+    "npm": "latest"
+  }
+}

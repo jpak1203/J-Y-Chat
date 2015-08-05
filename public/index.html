@@ -1,0 +1,112 @@
+<html>
+
+<head>
+  <title>J+Y Chat</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <h1 class="header">Welcome to J+Y Chat</h1>
+  <div class="messagePage">
+    <div class="content">
+      <div class="messages">
+      <form class="send-message">
+        <input class="m" autocomplete="off" placeholder="Type here..."/><button>Send</button>
+      </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="login">
+    <p>Enter a username</p>
+    <p class="nickError"></p>
+    <form class="setNick">
+      <input class="usernameInput" type="text" maxlength="14" />
+    </form>
+  </div>
+
+  <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+
+  jQuery(function($) {
+    var socket = io.connect();
+    var $setNick = $('.setNick');
+    var $nickError = $('.nickError');
+    var $usernameInput = $('.usernameInput');
+    var $messageForm = $('.send-message');
+    var $m = $('.m');
+    var $messages = $('.messages');
+    var COLORS = [
+      '#e21400', '#91580f', '#f8a700', '#f78b00',
+      '#58dc00', '#287b00', '#a8f07a', '#4ae8c4',
+      '#3b88eb', '#3824aa', '#a700ff', '#d300e7',
+      '#000000', '#003366', '#330033', '#660099',
+      '#669966', '#996600', '#FF99FF'
+    ];
+
+    $setNick.submit(function(e) {
+      e.preventDefault();
+      socket.emit('add user', $usernameInput.val(), function(data) {
+        if(data) {
+          $('.login').fadeOut();
+          $('.messagePage').fadeIn();
+          $('.header').fadeIn();
+          socket.on('user joined', function(data) {
+            $messages.append('<span class="system"><i>' + data.nick + " has joined.</i></span><br/>");
+            $messages.append('<span class="system"><i>Total participants: ' + data.numUsers + '</i></span><br/>');
+          });
+        } else {
+          $nickError.html('<span class="system">That username is already taken! Try again.</span>');
+        }
+      });
+      $usernameInput.val('');
+    });
+
+    socket.on('usernames', function(data){
+      var html = '';
+      for (i=0; i<data.length; i++) {
+        html += data[i] + '<br/>'
+      }
+      $users.html(html);
+    });
+
+    $messageForm.submit(function(e) {
+      e.preventDefault();
+      socket.emit('send message', $m.val(), function(data) {
+        $messages.append('<span class="error">' + data + "</span><br/>");
+      });
+      $m.val('');
+    });
+
+    function getUsernameColor (username) {
+      var hash = 7;
+      for (var i = 0; i < username.length; i++) {
+         hash = username.charCodeAt(i) + (hash << 5) - hash;
+      }
+      var index = Math.abs(hash % COLORS.length);
+      return COLORS[index];
+    }
+
+    socket.on('new message', function(data) {
+      var $usernameDiv = $('<span class="username"/>')
+        .text(data.nick)
+        .css('color', getUsernameColor(data.nick));
+      var $messageBodyDiv = $('<span class="messageBody">')
+        .text(data.msg);
+      $messages.append($usernameDiv);
+      $messages.append(": ");
+      $messages.append($messageBodyDiv);
+      $messages.append("<br/>");
+      $(document.body).scrollTop($messages[0].scrollHeight);
+    });
+
+    socket.on('user left', function(data) {
+      $messages.append('<span class="system"><i>' + data.nick + " has left.</i></span><br/>");
+      $messages.append('<span class="system"><i>Total participants: ' + data.numUsers + '</i></span><br/>');
+    });
+
+  });
+  </script>
+</body>
+</html>
