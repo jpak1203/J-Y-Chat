@@ -73,9 +73,7 @@
 
     $messageForm.submit(function(e) {
       e.preventDefault();
-      socket.emit('send message', $m.val(), function(data) {
-        $messages.append('<span class="error">' + data + "</span><br/>");
-      });
+      socket.emit('send message', $m.val());
       $m.val('');
     });
 

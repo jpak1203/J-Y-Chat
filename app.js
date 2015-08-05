@@ -22,15 +22,10 @@ io.on('connection', function(socket) {
       users[socket.username] = data;
       ++numUsers;
       io.sockets.emit('user joined', {nick: socket.username, numUsers: numUsers});
-      updateNicknames();
     }
   });
 
-  function updateNicknames() {
-    io.sockets.emit('usernames', Object.keys(users));
-  }
-
-  socket.on('send message', function(data, callback) {
+  socket.on('send message', function(data) {
     var msg = data.trim();
     io.sockets.emit('new message', {msg: msg, nick: socket.username});
   });
@@ -40,7 +35,6 @@ io.on('connection', function(socket) {
     --numUsers;
     io.sockets.emit('user left', {nick:socket.username, numUsers: numUsers});
     delete users[socket.username];
-    updateNicknames();
   });
 });
 
