@@ -3,10 +3,13 @@
 <head>
   <title>J+Y Chat</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.firebase.com/js/client/2.2.9/firebase.js"></script>
 </head>
 
 <body>
   <h1 class="header">Welcome to J+Y Chat</h1>
+  <p>Set new username</p>
+  <input class="usernameInput" type="text" maxlength="14" /><button class="set">Set</button>
   <div class="messagePage">
     <div class="content">
       <div class="messages">
@@ -17,26 +20,19 @@
     </div>
   </div>
 
-  <div class="login">
-    <p>Enter a username</p>
-    <p class="nickError"></p>
-    <form class="setNick">
-      <input class="usernameInput" type="text" maxlength="14" />
-    </form>
-  </div>
-
   <script src="//code.jquery.com/jquery-latest.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.firebase.com/js/client/2.2.9/firebase.js"></script>
   <script>
-
-  jQuery(function($) {
+    var ref = new Firebase("https://boiling-torch-1890.firebaseio.com/");
     var socket = io.connect();
     var $setNick = $('.setNick');
-    var $nickError = $('.nickError');
     var $usernameInput = $('.usernameInput');
     var $messageForm = $('.send-message');
     var $m = $('.m');
     var $messages = $('.messages');
+    var $cont = $('.continue');
+    var $setUser = $('.set');
     var COLORS = [
       '#e21400', '#91580f', '#f8a700', '#f78b00',
       '#58dc00', '#287b00', '#a8f07a', '#4ae8c4',
@@ -45,66 +41,119 @@
       '#669966', '#996600', '#FF99FF'
     ];
 
-    $setNick.submit(function(e) {
-      e.preventDefault();
-      socket.emit('add user', $usernameInput.val(), function(data) {
-        if(data) {
-          $('.login').fadeOut();
-          $('.messagePage').fadeIn();
-          $('.header').fadeIn();
-          socket.on('user joined', function(data) {
-            $messages.append('<span class="system"><i>' + data.nick + " has joined.</i></span><br/>");
-            $messages.append('<span class="system"><i>Total participants: ' + data.numUsers + '</i></span><br/>');
-          });
-        } else {
-          $nickError.html('<span class="system">That username is already taken! Try again.</span>');
+    ref.authWithOAuthPopup("google", function(error, authData) {
+      if (error) {
+        if (error.code === "TRANSPORT_UNAVAILABLE") {
+          // fall-back to browser redirects, and pick up the session
+          // automatically when we come back to the origin page
+          ref.authWithOAuthRedirect("google", function(error) { /* ... */ });
         }
-      });
-      $usernameInput.val('');
-    });
+      } else if (authData) {
+        var USERS_LOCATION = 'https://boiling-torch-1890.firebaseio.com/users';
 
-    socket.on('usernames', function(data){
-      var html = '';
-      for (i=0; i<data.length; i++) {
-        html += data[i] + '<br/>'
+        checkIfUserExists(authData.uid);
+
+        function userExistsCallback(userId, exists) {
+          if (exists) {
+            $('body').fadeIn();
+            $messages.append('<span class="system"><i>You have logged in!</i></span><br/>');
+            var userRef = ref.child('users').child(authData.uid);
+            userRef.on("value", function(snapshot) {
+              var newPost = snapshot.val();
+              socket.emit('add user', newPost.nick, function(data) {
+                if(data) {
+                  $('body').fadeIn();
+                  socket.on('user joined', function(data) {
+                    ref.child("users").child(authData.uid).set({
+                      name: getName(authData),
+                      nick: data.nick
+                    });
+                  });
+                } else {
+                  $nickError.html('<span class="system">Encountered an error! Try again.</span>');
+                }
+              });
+            });
+          } else {
+            alert('user ' + userId + ' does not exist!');
+            socket.emit('add user', getName(authData), function(data) {
+              if(data) {
+                $('body').fadeIn();
+                $messages.append('<span class="system"><i>You have logged in.</i></span><br/>');
+                socket.on('user joined', function(data) {
+                  ref.child("users").child(authData.uid).set({
+                    name: getName(authData),
+                    nick: data.nick
+                  });
+                });
+              } else {
+                $nickError.html('<span class="system">Encountered an error! Try again.</span>');
+              }
+            });
+          }
+        }
+
+        // Tests to see if /users/<userId> has any data.
+        function checkIfUserExists(userId) {
+          var usersRef = new Firebase(USERS_LOCATION);
+          usersRef.child(userId).once('value', function(snapshot) {
+            var exists = (snapshot.val() !== null);
+            userExistsCallback(userId, exists);
+          });
+        }
+
+        $setUser.click(function() {
+          socket.emit('add user', $usernameInput.val(), function(data) {
+            if(data) {
+              ref.child("users").child(authData.uid).set({
+                name: getName(authData),
+                nick: data.nick
+              });
+            }
+          });
+          $messages.append('<span class="system"><i>' + "Your name has been been changed to " + $usernameInput.val() + "</i></span><br/>");
+          $usernameInput.val("");
+        });
+
+        $messageForm.submit(function(e) {
+          e.preventDefault();
+          socket.emit('send message', $m.val());
+          $m.val('');
+        });
+
+        function getUsernameColor (username) {
+          var hash = 7;
+          for (var i = 0; i < username.length; i++) {
+             hash = username.charCodeAt(i) + (hash << 5) - hash;
+          }
+          var index = Math.abs(hash % COLORS.length);
+            return COLORS[index];
+        }
+
+        socket.on('new message', function(data) {
+          var $usernameDiv = $('<span class="username"/>')
+            .text(data.nick)
+            .css('color', getUsernameColor(data.nick));
+          var $messageBodyDiv = $('<span class="messageBody">')
+            .text(data.msg);
+          $messages.append($usernameDiv);
+          $messages.append(": ");
+          $messages.append($messageBodyDiv);
+          $messages.append("<br/>");
+          $(document.body).scrollTop($messages[0].scrollHeight);
+        });
+
+        socket.on('user left', function(data) {
+          $messages.append('<span class="system"><i>' + data.nick + " has left.</i></span><br/>");
+        });
+
+
+        function getName(authData) {
+          return authData.google.displayName;
+        }
       }
-      $users.html(html);
     });
 
-    $messageForm.submit(function(e) {
-      e.preventDefault();
-      socket.emit('send message', $m.val());
-      $m.val('');
-    });
-
-    function getUsernameColor (username) {
-      var hash = 7;
-      for (var i = 0; i < username.length; i++) {
-         hash = username.charCodeAt(i) + (hash << 5) - hash;
-      }
-      var index = Math.abs(hash % COLORS.length);
-      return COLORS[index];
-    }
-
-    socket.on('new message', function(data) {
-      var $usernameDiv = $('<span class="username"/>')
-        .text(data.nick)
-        .css('color', getUsernameColor(data.nick));
-      var $messageBodyDiv = $('<span class="messageBody">')
-        .text(data.msg);
-      $messages.append($usernameDiv);
-      $messages.append(": ");
-      $messages.append($messageBodyDiv);
-      $messages.append("<br/>");
-      $(document.body).scrollTop($messages[0].scrollHeight);
-    });
-
-    socket.on('user left', function(data) {
-      $messages.append('<span class="system"><i>' + data.nick + " has left.</i></span><br/>");
-      $messages.append('<span class="system"><i>Total participants: ' + data.numUsers + '</i></span><br/>');
-    });
-
-  });
   </script>
 </body>
 </html>

@@ -6,6 +6,7 @@
 
 body {
   font: 13px Helvetica, Arial, sans-serif;
+  display: none;
 }
 
 body h1 {
@@ -13,7 +14,6 @@ body h1 {
   font-size: 35px;
   font-weight: lighter;
   text-decoration: underline;
-  display:none;
 }
 
 .send-message {
@@ -39,6 +39,7 @@ body h1 {
   background: rgba(255, 96, 82, 0.7);
   border: none;
   padding: 10px;
+  text-align: center;
 }
 
 .messages {
@@ -49,28 +50,28 @@ body h1 {
   margin-bottom: 50;
 }
 
-.login {
+body p {
+  margin-left: 75px;
+}
+
+body .set {
+  background: rgba(255, 96, 82, 0.7);
+  border: none;
+  padding: 5px;
   text-align: center;
-  margin-top: 250px;
+  font-size: 15px;
+  margin-left: 10px;
 }
 
-.login p {
-  font-size: 50px;
-}
-
-.login .setNick .usernameInput {
+.usernameInput {
   border: none;
   border-bottom: 2px solid black;
   outline: none;
-  padding-top: 25px;
-  padding-bottom: 15px;
-  font-size: 25px;
+  padding-bottom: 5px;
+  font-size: 15px;
   text-align: center;
-  width: 400px;
-}
-
-.messagePage {
-  display:none;
+  width: 150px;
+  margin-left: 50px;
 }
 
 .system {

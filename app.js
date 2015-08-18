@@ -3,27 +3,20 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var port = process.env.PORT || 5000;
+var Firebase = require("firebase");
 
 process.env.PWD = process.cwd();
 
 app.use(express.static(process.env.PWD+'/public'));
 
-var users = {};
-var numUsers = 0;
 
 io.on('connection', function(socket) {
 
   socket.on('add user', function(data, callback) {
-    if (data in users) {
-      callback(false);
-    } else {
       callback(true);
       socket.username = data;
-      users[socket.username] = data;
-      ++numUsers;
-      io.sockets.emit('user joined', {nick: socket.username, numUsers: numUsers});
-    }
-  });
+      io.sockets.emit('user joined', {nick: socket.username});
+    });
 
   socket.on('send message', function(data) {
     var msg = data.trim();
@@ -32,9 +25,7 @@ io.on('connection', function(socket) {
 
   socket.on('disconnect', function(data) {
     if (!socket.username) return;
-    --numUsers;
-    io.sockets.emit('user left', {nick:socket.username, numUsers: numUsers});
-    delete users[socket.username];
+    io.sockets.emit('user left', {nick:socket.username});
   });
 });
 
