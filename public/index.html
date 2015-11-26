@@ -9,7 +9,9 @@
 <body>
   <h1 class="header">Welcome to J+Y Chat</h1>
   <p>Set new username</p>
-  <input class="usernameInput" type="text" maxlength="14" /><button class="set">Set</button>
+  <form id="usernameForm">
+    <input class="usernameInput" type="text" maxlength="14" /><button type="submit" class="set">Set</button>
+  </form>
   <div class="messagePage">
     <div class="content">
       <div class="messages">
@@ -32,7 +34,7 @@
     var $m = $('.m');
     var $messages = $('.messages');
     var $cont = $('.continue');
-    var $setUser = $('.set');
+    var $usernameForm = $('#usernameForm');
     var COLORS = [
       '#e21400', '#91580f', '#f8a700', '#f78b00',
       '#58dc00', '#287b00', '#a8f07a', '#4ae8c4',
@@ -63,11 +65,9 @@
               socket.emit('add user', newPost.nick, function(data) {
                 if(data) {
                   $('body').fadeIn();
-                  socket.on('user joined', function(data) {
-                    ref.child("users").child(authData.uid).set({
-                      name: getName(authData),
-                      nick: data.nick
-                    });
+                  ref.child("users").child(authData.uid).set({
+                    name: getName(authData),
+                    nick: newPost.nick
                   });
                 } else {
                   $nickError.html('<span class="system">Encountered an error! Try again.</span>');
@@ -75,16 +75,13 @@
               });
             });
           } else {
-            alert('user ' + userId + ' does not exist!');
             socket.emit('add user', getName(authData), function(data) {
               if(data) {
                 $('body').fadeIn();
                 $messages.append('<span class="system"><i>You have logged in.</i></span><br/>');
-                socket.on('user joined', function(data) {
-                  ref.child("users").child(authData.uid).set({
-                    name: getName(authData),
-                    nick: data.nick
-                  });
+                ref.child("users").child(authData.uid).set({
+                  name: getName(authData),
+                  nick: data.nick
                 });
               } else {
                 $nickError.html('<span class="system">Encountered an error! Try again.</span>');
@@ -92,6 +89,28 @@
             });
           }
         }
+
+        socket.on('user joined', function(data) {
+          $messages.append('<span class="system"><i>' + data.nick + " has joined.</i></span><br/>");
+        });
+
+        $usernameForm.submit(function(e) {
+          e.preventDefault();
+          socket.emit('update user', $usernameInput.val(), function(data) {
+            if (data && data.nick) {
+              ref.child("users").child(authData.uid).set({
+                name: getName(authData),
+                nick: data.nick
+              });
+            }
+          });
+          $usernameInput.val("");
+          return false;
+        });
+
+        socket.on('user updated', function(data) {
+          $messages.append('<span class="system"><i>' + data.prev + " has changed his/her name to " + data.nick + "</i></span><br/>");
+        });
 
         // Tests to see if /users/<userId> has any data.
         function checkIfUserExists(userId) {
@@ -101,19 +120,6 @@
             userExistsCallback(userId, exists);
           });
         }
-
-        $setUser.click(function() {
-          socket.emit('add user', $usernameInput.val(), function(data) {
-            if(data) {
-              ref.child("users").child(authData.uid).set({
-                name: getName(authData),
-                nick: data.nick
-              });
-            }
-          });
-          $messages.append('<span class="system"><i>' + "Your name has been been changed to " + $usernameInput.val() + "</i></span><br/>");
-          $usernameInput.val("");
-        });
 
         $messageForm.submit(function(e) {
           e.preventDefault();
@@ -151,7 +157,7 @@
         function getName(authData) {
           return authData.google.displayName;
         }
-      }
+      }ts
     });
 
   </script>

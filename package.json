@@ -6,6 +6,7 @@
   "author": "Justin Pak",
   "private": true,
   "dependencies": {
+    "debug-log": "^1.0.0",
     "express": "latest",
     "firebase": "^2.2.9",
     "npm": "latest",

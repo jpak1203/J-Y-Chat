@@ -13,10 +13,17 @@ app.use(express.static(process.env.PWD+'/public'));
 io.on('connection', function(socket) {
 
   socket.on('add user', function(data, callback) {
-      callback(true);
-      socket.username = data;
-      io.sockets.emit('user joined', {nick: socket.username});
-    });
+    callback({nick: socket.username});
+    socket.username = data;
+    io.sockets.emit("user joined", {nick: socket.username});
+  });
+
+  socket.on('update user', function(data, callback) {
+    prevNick = socket.username;
+    socket.username = data;
+    callback({nick: socket.username});
+    io.sockets.emit("user updated", {prev: prevNick, nick: socket.username});
+  });
 
   socket.on('send message', function(data) {
     var msg = data.trim();
